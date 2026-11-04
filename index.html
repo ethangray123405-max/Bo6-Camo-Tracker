@@ -1,0 +1,81 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111410"><meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Camo Tracker">
+<link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon-192.png"><link rel="icon" href="icon-192.png">
+<title>BO6 Zombies Camo Tracker</title>
+<style>
+:root{--bg:#111410;--card:#1c211a;--line:#2d3529;--tx:#e8eadf;--mut:#9aa38f;--gold:#e6be3c;--opal:#7fd6e0;--after:#c46bff;--neb:#ff5fa2;--mil:#6f8a4e;--spc:#b07a3e}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 -apple-system,system-ui,sans-serif;padding-bottom:calc(70px + env(safe-area-inset-bottom))}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(10px + env(safe-area-inset-top)) 14px 8px;border-bottom:1px solid var(--line)}
+h1{font-size:18px;margin:0 0 8px}.tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;padding:6px 12px;border-radius:16px;background:var(--card);border:1px solid var(--line);color:var(--mut);font-size:13px}.tab.on{background:var(--gold);color:#111;border-color:var(--gold);font-weight:600}
+main{padding:12px 14px}.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}.m b{display:block;font-size:20px}.m span{color:var(--mut);font-size:12px}
+.bar{height:7px;background:#0b0d0a;border-radius:4px;overflow:hidden;margin-top:4px}.bar i{display:block;height:100%;border-radius:4px}
+.w{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-top:1px solid var(--line)}.w:first-of-type{border-top:0}
+.wn{font-weight:600}.wn small{color:var(--mut);font-weight:400;margin-left:4px}.tiers{display:flex;gap:5px}
+.t{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:#0b0d0a;color:var(--mut);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0}
+.t.on{color:#111}.ch{display:flex;justify-content:space-between;align-items:baseline}.ch h2{font-size:16px;margin:0}.mut{color:var(--mut);font-size:12px}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#0b0d0a;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;border:0;color:var(--mut);padding:12px 0;font-size:13px}nav button.on{color:var(--gold);font-weight:700}
+.legend{display:flex;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--mut);margin-top:8px}.legend span::before{content:"";display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;background:var(--c)}
+textarea{width:100%;min-height:140px;background:#0b0d0a;color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:8px;font:12px monospace}
+.btn{background:var(--gold);color:#111;border:0;border-radius:8px;padding:9px 14px;font-weight:700;margin:6px 6px 0 0}.btn.sec{background:var(--card);color:var(--tx);border:1px solid var(--line)}
+ol{padding-left:20px}li{margin-bottom:10px}li b{color:var(--gold)}
+</style></head><body>
+<header><h1>BO6 Zombies Camo Tracker</h1><div class="tabs" id="tabs"></div></header>
+<main id="main"></main>
+<nav><button data-v="track" class="on">Tracker</button><button data-v="guide">Guide</button><button data-v="backup">Backup</button></nav>
+<script>
+const CLASSES=[
+{id:"ar",name:"Assault Rifles",opalNeed:7,weapons:[["XM4",0,3],["AK-74",0,3],["AMES 85",0,3],["GPR 91",0,3],["Model L",0,3],["Goblin Mk 2",0,3],["AS VAL",0,4],["Krig C",1,0],["Cypher 091",1,0],["Kilo 141",1,3],["CR-56 AMAX",1,0],["FFAR 1",1,0],["ABR A1",1,0],["Merrick 556",1,3]]},
+{id:"smg",name:"SMGs",opalNeed:6,weapons:[["C9",0,0],["KSV",0,0],["Tanto .22",0,0],["PP-919",0,0],["Jackal PDW",0,0],["Kompakt 92",0,0],["Saug",1,0],["PPSh-41",1,0],["Ladra",1,0],["LC10",1,0],["Dresden 9mm",1,0]]},
+{id:"sg",name:"Shotguns",opalNeed:2,weapons:[["Marine SP",0,3],["ASG-89",0,0],["Maelstrom",1,0]]},
+{id:"lmg",name:"LMGs",opalNeed:3,weapons:[["PU-21",0,0],["XMG",0,0],["GPMG-7",0,0],["Feng 82",1,0],["PML 5.56",1,0]]},
+{id:"mr",name:"Marksman Rifles",opalNeed:4,weapons:[["SWAT 5.56",0,0],["Tsarkov 7.62",0,0],["AEK-973",0,0],["DM-10",0,0],["TR2",1,0],["Essex Model 07",1,0]]},
+{id:"sn",name:"Sniper Rifles",opalNeed:3,weapons:[["LW3A1 Frostline",0,0],["SVD",0,0],["LR 7.62",0,0],["AMR Mod 4",1,0],["HDR",1,0]]},
+{id:"pi",name:"Pistols",opalNeed:4,weapons:[["9mm PM",0,0],["Grekhova",0,1],["GS45",0,0],["Stryder .22",0,0],["Gravemark .357",1,0]]},
+{id:"la",name:"Launchers",opalNeed:2,weapons:[["Cigma 2B",0,0],["HE-1",0,0]]},
+{id:"me",name:"Melee",opalNeed:2,weapons:[["Knife",0,0],["Baseball Bat",0,0],["Power Drill",1,0],["Cleaver",1,0],["Kali Sticks",1,0],["Pickaxe",1,0],["Boxing Gloves",1,0],["Chainsaw",1,0],["Katanas",1,0],["Bo Staff",1,0],["Sai",1,0],["Nunchaku",1,0],["Skateboard",1,0]]},
+{id:"sp",name:"Specials",opalNeed:null,weapons:[["Sirin 9mm",1,0],["Nail Gun",1,0],["Olympia",1,0],["D1.3 Sector",1,0],["X52 Resonator",1,0]]}];
+const NEED=33,TIERS=[["Military","MIL","--mil"],["Special","SPC","--spc"],["Mystic Gold","GLD","--gold"],["Opal","OPL","--opal"],["Afterlife","AFT","--after"],["Nebula","NEB","--neb"]];
+const KEY="bo6camo-v1";let P={};CLASSES.forEach(c=>c.weapons.forEach(w=>P[w[0]]=w[2]));
+try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&typeof s==="object")for(const k in s)if(k in P)P[k]=+s[k]||0}catch(e){}
+const save=()=>localStorage.setItem(KEY,JSON.stringify(P));
+let view="track",cls="all";const $=s=>document.querySelector(s);
+const cnt=(ws,t)=>ws.filter(w=>P[w[0]]>=t).length,all=()=>CLASSES.flatMap(c=>c.weapons);
+const bar=(v,n,c)=>`<div class="bar"><i style="width:${Math.min(100,n?v/n*100:0)}%;background:var(${c})"></i></div>`;
+function tabs(){$("#tabs").style.display=view==="track"?"flex":"none";$("#tabs").innerHTML=[["all","All"],...CLASSES.map(c=>[c.id,c.name])].map(([i,n])=>`<button class="tab ${cls===i?"on":""}" data-c="${i}">${n}</button>`).join("")}
+function render(){tabs();const m=$("#main");
+if(view==="track"){const A=all();let h=`<div class="card"><div class="metrics">
+<div class="m"><b>${cnt(A,3)} / ${A.length}</b><span>Mystic Gold</span>${bar(cnt(A,3),A.length,"--gold")}</div>
+<div class="m"><b>${cnt(A,4)} / ${NEED}</b><span>Opal toward Afterlife</span>${bar(cnt(A,4),NEED,"--opal")}</div>
+<div class="m"><b>${cnt(A,5)} / ${NEED}</b><span>Afterlife toward Nebula</span>${bar(cnt(A,5),NEED,"--after")}</div>
+<div class="m"><b>${cnt(A,6)} / ${A.length}</b><span>Nebula</span>${bar(cnt(A,6),A.length,"--neb")}</div></div>
+<div class="legend">${TIERS.map(t=>`<span style="--c:var(${t[2]})">${t[1]} ${t[0]}</span>`).join("")}</div></div>`;
+(cls==="all"?CLASSES:CLASSES.filter(c=>c.id===cls)).forEach(c=>{const g=cnt(c.weapons,3),n=c.opalNeed;
+h+=`<div class="card"><div class="ch"><h2>${c.name}</h2><span class="mut">Gold ${g}/${c.weapons.length} · Opal ${cnt(c.weapons,4)} · Aft ${cnt(c.weapons,5)} · Neb ${cnt(c.weapons,6)}</span></div>
+<div class="mut" style="margin-top:4px">${n===null?"Golds for Opal: unconfirmed":g>=n?`Opal unlocked (${n}/${n})`:`Golds toward Opal: ${g} / ${n}`}</div>${n?bar(Math.min(g,n),n,"--opal"):""}
+${c.weapons.map(w=>`<div class="w"><div class="wn">${w[0]}${w[1]?"<small>DLC</small>":""}</div><div class="tiers">${TIERS.map((t,i)=>`<button class="t ${P[w[0]]>i?"on":""}" style="${P[w[0]]>i?`background:var(${t[2]});border-color:var(${t[2]})`:""}" data-w="${w[0]}" data-i="${i+1}" aria-label="${t[0]}">${t[1]}</button>`).join("")}</div></div>`).join("")}</div>`});
+m.innerHTML=h}
+else if(view==="guide")m.innerHTML=`<div class="card"><h2 style="margin-top:0">How to unlock each tier</h2><ol>
+<li><b>Military (9 camos)</b><br>Critical kill milestones with the weapon, in order. Counts vary by class (e.g. the last AR military camo is 2,000 critical kills).</li>
+<li><b>Special (2 camos)</b><br>Two weapon-specific challenges, either order, e.g. XM4: 300 kills with Napalm Burst, 30 Vermin kills.</li>
+<li><b>Mystic Gold</b><br>After all Military and Special: get 10 kills rapidly, 15 times.</li>
+<li><b>Opal</b><br>After Mystic Gold on the class's launch count of weapons (AR 7, SMG 6, Shotgun 2, LMG 3, Marksman 4, Sniper 3, Pistol 4, Launcher 2): get 30 Special Zombie kills.</li>
+<li><b>Afterlife</b><br>After Opal on any 33 weapons: get 20+ consecutive kills without taking damage, 10 times.</li>
+<li><b>Nebula</b><br>After Afterlife on any 33 weapons: get 10 Elite Zombie kills.</li></ol>
+<p class="mut">Post-launch (DLC) weapons don't raise the Opal, Afterlife, or Nebula requirements, so you can skip guns you dislike. Launcher challenges differ (Mystic Gold is 3 kills in one shot, 15 times).</p>
+<p class="mut">Tip: tap a tier to mark it and every tier before it. Tap the highest marked tier again to step back one.</p></div>`;
+else m.innerHTML=`<div class="card"><h2 style="margin-top:0">Export</h2><p class="mut">Copy this text somewhere safe to back up your progress.</p><textarea id="ex" readonly>${JSON.stringify(P)}</textarea><button class="btn" id="cp">Copy</button></div>
+<div class="card"><h2 style="margin-top:0">Import</h2><p class="mut">Paste exported JSON and tap Import.</p><textarea id="im"></textarea><button class="btn" id="ib">Import</button><button class="btn sec" id="rs">Reset to zero</button><p class="mut" id="msg"></p></div>`}
+document.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+if(b.dataset.v){view=b.dataset.v;document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x===b));render();scrollTo(0,0)}
+else if(b.dataset.c){cls=b.dataset.c;render()}
+else if(b.dataset.w){const w=b.dataset.w,i=+b.dataset.i;P[w]=P[w]===i?i-1:i;save();render()}
+else if(b.id==="cp"){const t=$("#ex");t.select();(navigator.clipboard?navigator.clipboard.writeText(t.value):Promise.reject()).then(()=>b.textContent="Copied!",()=>{document.execCommand("copy");b.textContent="Copied!"})}
+else if(b.id==="ib"){try{const s=JSON.parse($("#im").value);let n=0;for(const k in s)if(k in P){P[k]=Math.max(0,Math.min(6,+s[k]||0));n++}save();$("#msg").textContent=`Imported ${n} weapons.`}catch(err){$("#msg").textContent="That isn't valid JSON."}}
+else if(b.id==="rs"&&confirm("Clear all progress?")){for(const k in P)P[k]=0;save();render()}});
+render();if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js");
+</script></body></html>
